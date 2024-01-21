@@ -20,22 +20,21 @@ class Aggregator(nn.Module):
         self.activation = nn.LeakyReLU()
 
         if self.aggregator_type == 'gcn':
-            self.linear = nn.Linear(self.in_dim, self.out_dim)       # W in Equation (6)
+            self.linear = nn.Linear(self.in_dim, self.out_dim)  # W in Equation (6)
             nn.init.xavier_uniform_(self.linear.weight)
 
         elif self.aggregator_type == 'graphsage':
-            self.linear = nn.Linear(self.in_dim * 2, self.out_dim)   # W in Equation (7)
+            self.linear = nn.Linear(self.in_dim * 2, self.out_dim)  # W in Equation (7)
             nn.init.xavier_uniform_(self.linear.weight)
 
         elif self.aggregator_type == 'bi-interaction':
-            self.linear1 = nn.Linear(self.in_dim, self.out_dim)      # W1 in Equation (8)
-            self.linear2 = nn.Linear(self.in_dim, self.out_dim)      # W2 in Equation (8)
+            self.linear1 = nn.Linear(self.in_dim, self.out_dim)  # W1 in Equation (8)
+            self.linear2 = nn.Linear(self.in_dim, self.out_dim)  # W2 in Equation (8)
             nn.init.xavier_uniform_(self.linear1.weight)
             nn.init.xavier_uniform_(self.linear2.weight)
 
         else:
             raise NotImplementedError
-
 
     def forward(self, ego_embeddings, A_in):
         """
@@ -61,7 +60,7 @@ class Aggregator(nn.Module):
             bi_embeddings = self.activation(self.linear2(ego_embeddings * side_embeddings))
             embeddings = bi_embeddings + sum_embeddings
 
-        embeddings = self.message_dropout(embeddings)           # (n_users + n_entities, out_dim)
+        embeddings = self.message_dropout(embeddings)  # (n_users + n_entities, out_dim)
         return embeddings
 
 
@@ -106,13 +105,15 @@ class KGAT(nn.Module):
 
         self.aggregator_layers = nn.ModuleList()
         for k in range(self.n_layers):
-            self.aggregator_layers.append(Aggregator(self.conv_dim_list[k], self.conv_dim_list[k + 1], self.mess_dropout[k], self.aggregation_type))
+            self.aggregator_layers.append(
+                Aggregator(self.conv_dim_list[k], self.conv_dim_list[k + 1], self.mess_dropout[k],
+                           self.aggregation_type))
 
-        self.A_in = nn.Parameter(torch.sparse.FloatTensor(self.n_users + self.n_entities, self.n_users + self.n_entities))
+        self.A_in = nn.Parameter(
+            torch.sparse.FloatTensor(self.n_users + self.n_entities, self.n_users + self.n_entities))
         if A_in is not None:
             self.A_in.data = A_in
         self.A_in.requires_grad = False
-
 
     def calc_cf_embeddings(self):
         ego_embed = self.entity_user_embed.weight
@@ -124,9 +125,8 @@ class KGAT(nn.Module):
             all_embed.append(norm_embed)
 
         # Equation (11)
-        all_embed = torch.cat(all_embed, dim=1)         # (n_users + n_entities, concat_dim)
+        all_embed = torch.cat(all_embed, dim=1)  # (n_users + n_entities, concat_dim)
         return all_embed
-
 
     def calc_cf_loss(self, user_ids, item_pos_ids, item_neg_ids):
         """
@@ -134,14 +134,14 @@ class KGAT(nn.Module):
         item_pos_ids:   (cf_batch_size)
         item_neg_ids:   (cf_batch_size)
         """
-        all_embed = self.calc_cf_embeddings()                       # (n_users + n_entities, concat_dim)
-        user_embed = all_embed[user_ids]                            # (cf_batch_size, concat_dim)
-        item_pos_embed = all_embed[item_pos_ids]                    # (cf_batch_size, concat_dim)
-        item_neg_embed = all_embed[item_neg_ids]                    # (cf_batch_size, concat_dim)
+        all_embed = self.calc_cf_embeddings()  # (n_users + n_entities, concat_dim)
+        user_embed = all_embed[user_ids]  # (cf_batch_size, concat_dim)
+        item_pos_embed = all_embed[item_pos_ids]  # (cf_batch_size, concat_dim)
+        item_neg_embed = all_embed[item_neg_ids]  # (cf_batch_size, concat_dim)
 
         # Equation (12)
-        pos_score = torch.sum(user_embed * item_pos_embed, dim=1)   # (cf_batch_size)
-        neg_score = torch.sum(user_embed * item_neg_embed, dim=1)   # (cf_batch_size)
+        pos_score = torch.sum(user_embed * item_pos_embed, dim=1)  # (cf_batch_size)
+        neg_score = torch.sum(user_embed * item_neg_embed, dim=1)  # (cf_batch_size)
 
         # Equation (13)
         # cf_loss = F.softplus(neg_score - pos_score)
@@ -152,7 +152,6 @@ class KGAT(nn.Module):
         loss = cf_loss + self.cf_l2loss_lambda * l2_loss
         return loss
 
-
     def calc_kg_loss(self, h, r, pos_t, neg_t):
         """
         h:      (kg_batch_size)
@@ -160,30 +159,30 @@ class KGAT(nn.Module):
         pos_t:  (kg_batch_size)
         neg_t:  (kg_batch_size)
         """
-        r_embed = self.relation_embed(r)                                                # (kg_batch_size, relation_dim)
-        W_r = self.trans_M[r]                                                           # (kg_batch_size, embed_dim, relation_dim)
+        r_embed = self.relation_embed(r)  # (kg_batch_size, relation_dim)
+        W_r = self.trans_M[r]  # (kg_batch_size, embed_dim, relation_dim)
 
-        h_embed = self.entity_user_embed(h)                                             # (kg_batch_size, embed_dim)
-        pos_t_embed = self.entity_user_embed(pos_t)                                     # (kg_batch_size, embed_dim)
-        neg_t_embed = self.entity_user_embed(neg_t)                                     # (kg_batch_size, embed_dim)
+        h_embed = self.entity_user_embed(h)  # (kg_batch_size, embed_dim)
+        pos_t_embed = self.entity_user_embed(pos_t)  # (kg_batch_size, embed_dim)
+        neg_t_embed = self.entity_user_embed(neg_t)  # (kg_batch_size, embed_dim)
 
-        r_mul_h = torch.bmm(h_embed.unsqueeze(1), W_r).squeeze(1)                       # (kg_batch_size, relation_dim)
-        r_mul_pos_t = torch.bmm(pos_t_embed.unsqueeze(1), W_r).squeeze(1)               # (kg_batch_size, relation_dim)
-        r_mul_neg_t = torch.bmm(neg_t_embed.unsqueeze(1), W_r).squeeze(1)               # (kg_batch_size, relation_dim)
+        r_mul_h = torch.bmm(h_embed.unsqueeze(1), W_r).squeeze(1)  # (kg_batch_size, relation_dim)
+        r_mul_pos_t = torch.bmm(pos_t_embed.unsqueeze(1), W_r).squeeze(1)  # (kg_batch_size, relation_dim)
+        r_mul_neg_t = torch.bmm(neg_t_embed.unsqueeze(1), W_r).squeeze(1)  # (kg_batch_size, relation_dim)
 
         # Equation (1)
-        pos_score = torch.sum(torch.pow(r_mul_h + r_embed - r_mul_pos_t, 2), dim=1)     # (kg_batch_size)
-        neg_score = torch.sum(torch.pow(r_mul_h + r_embed - r_mul_neg_t, 2), dim=1)     # (kg_batch_size)
+        pos_score = torch.sum(torch.pow(r_mul_h + r_embed - r_mul_pos_t, 2), dim=1)  # (kg_batch_size)
+        neg_score = torch.sum(torch.pow(r_mul_h + r_embed - r_mul_neg_t, 2), dim=1)  # (kg_batch_size)
 
         # Equation (2)
         # kg_loss = F.softplus(pos_score - neg_score)
         kg_loss = (-1.0) * F.logsigmoid(neg_score - pos_score)
         kg_loss = torch.mean(kg_loss)
 
-        l2_loss = _L2_loss_mean(r_mul_h) + _L2_loss_mean(r_embed) + _L2_loss_mean(r_mul_pos_t) + _L2_loss_mean(r_mul_neg_t)
+        l2_loss = _L2_loss_mean(r_mul_h) + _L2_loss_mean(r_embed) + _L2_loss_mean(r_mul_pos_t) + _L2_loss_mean(
+            r_mul_neg_t)
         loss = kg_loss + self.kg_l2loss_lambda * l2_loss
         return loss
-
 
     def update_attention_batch(self, h_list, t_list, r_idx):
         r_embed = self.relation_embed.weight[r_idx]
@@ -197,7 +196,6 @@ class KGAT(nn.Module):
         r_mul_t = torch.matmul(t_embed, W_r)
         v_list = torch.sum(r_mul_t * torch.tanh(r_mul_h + r_embed), dim=1)
         return v_list
-
 
     def update_attention(self, h_list, t_list, r_list, relations):
         device = self.A_in.device
@@ -228,20 +226,18 @@ class KGAT(nn.Module):
         A_in = torch.sparse.softmax(A_in.cpu(), dim=1)
         self.A_in.data = A_in.to(device)
 
-
     def calc_score(self, user_ids, item_ids):
         """
         user_ids:  (n_users)
         item_ids:  (n_items)
         """
-        all_embed = self.calc_cf_embeddings()           # (n_users + n_entities, concat_dim)
-        user_embed = all_embed[user_ids]                # (n_users, concat_dim)
-        item_embed = all_embed[item_ids]                # (n_items, concat_dim)
+        all_embed = self.calc_cf_embeddings()  # (n_users + n_entities, concat_dim)
+        user_embed = all_embed[user_ids]  # (n_users, concat_dim)
+        item_embed = all_embed[item_ids]  # (n_items, concat_dim)
 
         # Equation (12)
-        cf_score = torch.matmul(user_embed, item_embed.transpose(0, 1))    # (n_users, n_items)
+        cf_score = torch.matmul(user_embed, item_embed.transpose(0, 1))  # (n_users, n_items)
         return cf_score
-
 
     def forward(self, *input, mode):
         if mode == 'train_cf':
@@ -252,5 +248,3 @@ class KGAT(nn.Module):
             return self.update_attention(*input)
         if mode == 'predict':
             return self.calc_score(*input)
-
-
