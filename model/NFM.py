@@ -17,7 +17,6 @@ class HiddenLayer(nn.Module):
 
         nn.init.xavier_uniform_(self.linear.weight)
 
-
     def forward(self, x):
         out = self.linear(x)
         out = self.activation(out)
@@ -69,10 +68,10 @@ class NFM(nn.Module):
         elif self.model_type == 'nfm':
             self.hidden_layers = nn.ModuleList()
             for idx in range(self.n_layers):
-                self.hidden_layers.append(HiddenLayer(self.hidden_dim_list[idx], self.hidden_dim_list[idx + 1], self.mess_dropout[idx]))
+                self.hidden_layers.append(
+                    HiddenLayer(self.hidden_dim_list[idx], self.hidden_dim_list[idx + 1], self.mess_dropout[idx]))
             self.h = nn.Linear(self.hidden_dim_list[-1], 1, bias=False)
             nn.init.xavier_uniform_(self.h.weight)
-
 
     def calc_score(self, feature_values):
         """
@@ -80,30 +79,29 @@ class NFM(nn.Module):
         """
         # Bi-Interaction layer
         # Equation (4) / (3)
-        sum_square_embed = torch.mm(feature_values, self.feature_embed).pow(2)           # (batch_size, embed_dim)
-        square_sum_embed = torch.mm(feature_values.pow(2), self.feature_embed.pow(2))    # (batch_size, embed_dim)
-        z = 0.5 * (sum_square_embed - square_sum_embed)                                  # (batch_size, embed_dim)
+        sum_square_embed = torch.mm(feature_values, self.feature_embed).pow(2)  # (batch_size, embed_dim)
+        square_sum_embed = torch.mm(feature_values.pow(2), self.feature_embed.pow(2))  # (batch_size, embed_dim)
+        z = 0.5 * (sum_square_embed - square_sum_embed)  # (batch_size, embed_dim)
 
         if self.model_type == 'nfm':
             # Equation (5)
             for i, layer in enumerate(self.hidden_layers):
-                z = layer(z)                                # (batch_size, hidden_dim)
+                z = layer(z)  # (batch_size, hidden_dim)
 
         # Prediction layer
         # Equation (6)
-        y = self.h(z)                                       # (batch_size, 1)
+        y = self.h(z)  # (batch_size, 1)
         # Equation (2) / (7) / (8)
-        y = self.linear(feature_values) + y                 # (batch_size, 1)
-        return y.squeeze()                                  # (batch_size)
-
+        y = self.linear(feature_values) + y  # (batch_size, 1)
+        return y.squeeze()  # (batch_size)
 
     def calc_loss(self, pos_feature_values, neg_feature_values):
         """
         pos_feature_values:  (batch_size, n_features), torch.sparse.FloatTensor
         neg_feature_values:  (batch_size, n_features), torch.sparse.FloatTensor
         """
-        pos_scores = self.calc_score(pos_feature_values)            # (batch_size)
-        neg_scores = self.calc_score(neg_feature_values)            # (batch_size)
+        pos_scores = self.calc_score(pos_feature_values)  # (batch_size)
+        neg_scores = self.calc_score(neg_feature_values)  # (batch_size)
 
         loss = (-1.0) * torch.log(1e-10 + F.sigmoid(pos_scores - neg_scores))
         loss = torch.mean(loss)
@@ -112,11 +110,8 @@ class NFM(nn.Module):
         loss += self.l2loss_lambda * l2_loss
         return loss
 
-
     def forward(self, *input, is_train):
         if is_train:
             return self.calc_loss(*input)
         else:
             return self.calc_score(*input)
-
-

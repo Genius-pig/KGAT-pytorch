@@ -18,7 +18,6 @@ class DataLoaderNFM(DataLoaderBase):
         self.construct_data(kg_data)
         self.print_info(logging)
 
-
     def construct_data(self, kg_data):
         self.n_entities = max(max(kg_data['h']), max(kg_data['t'])) + 1
         self.n_users_entities = self.n_users + self.n_entities
@@ -34,8 +33,8 @@ class DataLoaderNFM(DataLoaderBase):
         feat_data += [1] * filtered_kg_data.shape[0]
 
         self.user_matrix = sp.identity(self.n_users).tocsr()
-        self.feat_matrix = sp.coo_matrix((feat_data, (feat_rows, feat_cols)), shape=(self.n_items, self.n_entities)).tocsr()
-
+        self.feat_matrix = sp.coo_matrix((feat_data, (feat_rows, feat_cols)),
+                                         shape=(self.n_items, self.n_entities)).tocsr()
 
     def print_info(self, logging):
         logging.info('n_users:              %d' % self.n_users)
@@ -49,7 +48,6 @@ class DataLoaderNFM(DataLoaderBase):
         logging.info('shape of user_matrix: {}'.format(self.user_matrix.shape))
         logging.info('shape of feat_matrix: {}'.format(self.feat_matrix.shape))
 
-
     def convert_coo2tensor(self, coo):
         values = coo.data
         indices = np.vstack((coo.row, coo.col))
@@ -57,8 +55,7 @@ class DataLoaderNFM(DataLoaderBase):
         i = torch.LongTensor(indices)
         v = torch.FloatTensor(values)
         shape = coo.shape
-        return torch.sparse.FloatTensor(i, v, torch.Size(shape))
-
+        return torch.sparse_coo_tensor(i, v, torch.Size(shape))
 
     def generate_train_batch(self, user_dict):
         batch_user, batch_pos_item, batch_neg_item = self.generate_cf_batch(user_dict, self.train_batch_size)
@@ -73,7 +70,6 @@ class DataLoaderNFM(DataLoaderBase):
         neg_feature_values = self.convert_coo2tensor(neg_feature_values.tocoo())
         return pos_feature_values, neg_feature_values
 
-
     def generate_test_batch(self, batch_user):
         n_rows = len(batch_user) * self.n_items
         user_rows = list(range(n_rows))
@@ -86,5 +82,3 @@ class DataLoaderNFM(DataLoaderBase):
         feature_values = sp.hstack([batch_user_sp, batch_item_sp])
         feature_values = self.convert_coo2tensor(feature_values.tocoo())
         return feature_values
-
-

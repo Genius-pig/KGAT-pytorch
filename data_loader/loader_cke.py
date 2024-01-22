@@ -22,7 +22,6 @@ class DataLoaderCKE(DataLoaderBase):
         self.construct_data(kg_data)
         self.print_info(logging)
 
-
     def construct_data(self, kg_data):
         # add inverse kg data
         n_relations = max(kg_data['r']) + 1
@@ -43,7 +42,6 @@ class DataLoaderCKE(DataLoaderBase):
             self.kg_dict[h].append((t, r))
             self.relation_dict[r].append((h, t))
 
-
     def print_info(self, logging):
         logging.info('n_users:      %d' % self.n_users)
         logging.info('n_items:      %d' % self.n_items)
@@ -54,5 +52,3 @@ class DataLoaderCKE(DataLoaderBase):
         logging.info('n_cf_test:    %d' % self.n_cf_test)
 
         logging.info('n_kg_data:    %d' % self.n_kg_data)
-
-

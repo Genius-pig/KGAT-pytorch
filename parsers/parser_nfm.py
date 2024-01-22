@@ -27,7 +27,8 @@ def parse_nfm_args():
     parser.add_argument('--hidden_dim_list', nargs='?', default='[64, 32, 16]',
                         help='Output sizes of every hidden layer.')
     parser.add_argument('--mess_dropout', nargs='?', default='[0.1, 0.1, 0.1]',
-                        help='Dropout probability w.r.t. message dropout for bi-interaction layer and each hidden layer. 0: no dropout.')
+                        help='Dropout probability w.r.t. message dropout for bi-interaction layer and each hidden '
+                             'layer. 0: no dropout.')
     parser.add_argument('--l2loss_lambda', type=float, default=1e-5,
                         help='Lambda when calculating l2 loss.')
 
