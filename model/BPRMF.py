@@ -34,17 +34,15 @@ class BPRMF(nn.Module):
         else:
             nn.init.xavier_uniform_(self.item_embed.weight)
 
-
     def calc_score(self, user_ids, item_ids):
         """
         user_ids:   (n_users)
         item_ids:   (n_items)
         """
-        user_embed = self.user_embed(user_ids)                              # (n_users, embed_dim)
-        item_embed = self.item_embed(item_ids)                              # (n_items, embed_dim)
-        cf_score = torch.matmul(user_embed, item_embed.transpose(0, 1))     # (n_users, n_items)
+        user_embed = self.user_embed(user_ids)  # (n_users, embed_dim)
+        item_embed = self.item_embed(item_ids)  # (n_items, embed_dim)
+        cf_score = torch.matmul(user_embed, item_embed.transpose(0, 1))  # (n_users, n_items)
         return cf_score
-
 
     def calc_loss(self, user_ids, item_pos_ids, item_neg_ids):
         """
@@ -52,12 +50,12 @@ class BPRMF(nn.Module):
         item_pos_ids:   (batch_size)
         item_neg_ids:   (batch_size)
         """
-        user_embed = self.user_embed(user_ids)              # (batch_size, embed_dim)
-        item_pos_embed = self.item_embed(item_pos_ids)      # (batch_size, embed_dim)
-        item_neg_embed = self.item_embed(item_neg_ids)      # (batch_size, embed_dim)
+        user_embed = self.user_embed(user_ids)  # (batch_size, embed_dim)
+        item_pos_embed = self.item_embed(item_pos_ids)  # (batch_size, embed_dim)
+        item_neg_embed = self.item_embed(item_neg_ids)  # (batch_size, embed_dim)
 
-        pos_score = torch.sum(user_embed * item_pos_embed, dim=1)       # (batch_size)
-        neg_score = torch.sum(user_embed * item_neg_embed, dim=1)       # (batch_size)
+        pos_score = torch.sum(user_embed * item_pos_embed, dim=1)  # (batch_size)
+        neg_score = torch.sum(user_embed * item_neg_embed, dim=1)  # (batch_size)
 
         cf_loss = (-1.0) * F.logsigmoid(pos_score - neg_score)
         cf_loss = torch.mean(cf_loss)
@@ -66,11 +64,8 @@ class BPRMF(nn.Module):
         loss = cf_loss + self.l2loss_lambda * l2_loss
         return loss
 
-
     def forward(self, *input, is_train):
         if is_train:
             return self.calc_loss(*input)
         else:
             return self.calc_score(*input)
-
-

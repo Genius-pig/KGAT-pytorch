@@ -106,4 +106,35 @@ With my code, following are the results of each model when training with dataset
         * Model the high-order relations in collaborative knowledge graph to provide better recommendation with item side information.
         * Train KG part and CF part in turns.
         
+1. 处理mooc-cube数据，使其能符合推荐算法数据格式，比如id重定向。
 
+2. 在公开数据集Amazon-book（4个）和mooc-cube（1个）数据集跑算法对比实验，但是mooc-cube效果太好，有可能是因为选课数据太少原因，正在调查。
+
+3. 在书籍Amazon-book推荐算法
+
+|                       Model                       | Best Epoch | Precision@20 | Recall@20 | NDCG@20 |
+|:-------------------------------------------------:|:----------:|:------------:|:---------:|:-------:|
+|                       BPRMF                       |    330     |    0.0146    |  0.1395   | 0.0736  |
+|                       ECFKG                       |     10     |    0.0134    |  0.1264   | 0.0663  |
+|                        CKE                        |    320     |    0.0145    |  0.1394   | 0.0733  |
+| KGAT <br> (agg: bi-interaction; lap: random-walk) |    280     |    0.0150    |  0.1440   | 0.0766  |
+|  KGAT <br> (agg: bi-interaction; lap: symmetric)  |    200     |    0.0149    |  0.1428   | 0.0755  |
+| KGAT <br> (agg: graphsage;      lap: random-walk) |    450     |    0.0147    |  0.1430   | 0.0747  |
+|  KGAT <br> (agg: graphsage;      lap: symmetric)  |    160     |    0.0146    |  0.1410   | 0.0735  |
+| KGAT <br> (agg: gcn;            lap: random-walk) |    280     |    0.0149    |  0.1440   | 0.0760  |
+|  KGAT <br> (agg: gcn;            lap: symmetric)  |    670     |    0.0150    |  0.1448   | 0.0768  |
+
+在课程数据上的推荐算法
+
+| Model | Best Epoch | Precision@20 | Recall@20 | NDCG@20 |
+|:-----:|:----------:|:------------:|:---------:|:-------:|
+| BPRMF |    350     |    0.0610    |  0.5285   | 0.3458  |
+
+```
+import numpy as np
+
+if __name__ == '__main__':
+    pretrain_data = np.load('mf250.npz')
+    user = pretrain_data['user_embed']
+    item = pretrain_data['item_embed']
+```
