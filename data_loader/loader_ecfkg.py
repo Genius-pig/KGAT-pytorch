@@ -20,7 +20,6 @@ class DataLoaderECFKG(DataLoaderBase):
         self.construct_data(kg_data)
         self.print_info(logging)
 
-
     def construct_data(self, kg_data):
         # add inverse kg data
         n_relations = max(kg_data['r']) + 1
@@ -35,11 +34,16 @@ class DataLoaderECFKG(DataLoaderBase):
         self.n_entities = max(max(kg_data['h']), max(kg_data['t'])) + 1
         self.n_users_entities = self.n_users + self.n_entities
 
-        self.cf_train_data = (np.array(list(map(lambda d: d + self.n_entities, self.cf_train_data[0]))).astype(np.int32), self.cf_train_data[1].astype(np.int32))
-        self.cf_test_data = (np.array(list(map(lambda d: d + self.n_entities, self.cf_test_data[0]))).astype(np.int32), self.cf_test_data[1].astype(np.int32))
+        self.cf_train_data = (
+        np.array(list(map(lambda d: d + self.n_entities, self.cf_train_data[0]))).astype(np.int32),
+        self.cf_train_data[1].astype(np.int32))
+        self.cf_test_data = (np.array(list(map(lambda d: d + self.n_entities, self.cf_test_data[0]))).astype(np.int32),
+                             self.cf_test_data[1].astype(np.int32))
 
-        self.train_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in self.train_user_dict.items()}
-        self.test_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in self.test_user_dict.items()}
+        self.train_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in
+                                self.train_user_dict.items()}
+        self.test_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in
+                               self.test_user_dict.items()}
 
         # add interactions to kg data
         self.relation_u2i_id = 0
@@ -61,7 +65,6 @@ class DataLoaderECFKG(DataLoaderBase):
             h, r, t = row[1]
             self.train_kg_dict[h].append((t, r))
 
-
     def print_info(self, logging):
         logging.info('n_users:           %d' % self.n_users)
         logging.info('n_items:           %d' % self.n_items)
@@ -73,5 +76,3 @@ class DataLoaderECFKG(DataLoaderBase):
         logging.info('n_cf_test:         %d' % self.n_cf_test)
 
         logging.info('n_kg_train:        %d' % self.n_kg_train)
-
-
