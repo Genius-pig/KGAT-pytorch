@@ -17,6 +17,7 @@ class DataLoaderKGAT(DataLoaderBase):
         self.cf_batch_size = args.cf_batch_size
         self.kg_batch_size = args.kg_batch_size
         self.test_batch_size = args.test_batch_size
+        self.adjacency_dict = {}
 
         kg_data = self.load_kg(self.kg_file)
         self.construct_data(kg_data)
@@ -25,7 +26,6 @@ class DataLoaderKGAT(DataLoaderBase):
         self.laplacian_type = args.laplacian_type
         self.create_adjacency_dict()
         self.create_laplacian_dict()
-
 
     def construct_data(self, kg_data):
         # add inverse kg data
@@ -41,11 +41,17 @@ class DataLoaderKGAT(DataLoaderBase):
         self.n_entities = max(max(kg_data['h']), max(kg_data['t'])) + 1
         self.n_users_entities = self.n_users + self.n_entities
 
-        self.cf_train_data = (np.array(list(map(lambda d: d + self.n_entities, self.cf_train_data[0]))).astype(np.int32), self.cf_train_data[1].astype(np.int32))
-        self.cf_test_data = (np.array(list(map(lambda d: d + self.n_entities, self.cf_test_data[0]))).astype(np.int32), self.cf_test_data[1].astype(np.int32))
+        # 为什么要给所有user编号加上entity数
+        self.cf_train_data = (
+            np.array(list(map(lambda d: d + self.n_entities, self.cf_train_data[0]))).astype(np.int32),
+            self.cf_train_data[1].astype(np.int32))
+        self.cf_test_data = (np.array(list(map(lambda d: d + self.n_entities, self.cf_test_data[0]))).astype(np.int32),
+                             self.cf_test_data[1].astype(np.int32))
 
-        self.train_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in self.train_user_dict.items()}
-        self.test_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in self.test_user_dict.items()}
+        self.train_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in
+                                self.train_user_dict.items()}
+        self.test_user_dict = {k + self.n_entities: np.unique(v).astype(np.int32) for k, v in
+                               self.test_user_dict.items()}
 
         # add interactions to kg data
         cf2kg_train_data = pd.DataFrame(np.zeros((self.n_cf_train, 3), dtype=np.int32), columns=['h', 'r', 't'])
@@ -80,7 +86,6 @@ class DataLoaderKGAT(DataLoaderBase):
         self.t_list = torch.LongTensor(t_list)
         self.r_list = torch.LongTensor(r_list)
 
-
     def convert_coo2tensor(self, coo):
         values = coo.data
         indices = np.vstack((coo.row, coo.col))
@@ -90,16 +95,13 @@ class DataLoaderKGAT(DataLoaderBase):
         shape = coo.shape
         return torch.sparse.FloatTensor(i, v, torch.Size(shape))
 
-
     def create_adjacency_dict(self):
-        self.adjacency_dict = {}
         for r, ht_list in self.train_relation_dict.items():
             rows = [e[0] for e in ht_list]
             cols = [e[1] for e in ht_list]
             vals = [1] * len(rows)
             adj = sp.coo_matrix((vals, (rows, cols)), shape=(self.n_users_entities, self.n_users_entities))
             self.adjacency_dict[r] = adj
-
 
     def create_laplacian_dict(self):
         def symmetric_norm_lap(adj):
@@ -136,7 +138,6 @@ class DataLoaderKGAT(DataLoaderBase):
         A_in = sum(self.laplacian_dict.values())
         self.A_in = self.convert_coo2tensor(A_in.tocoo())
 
-
     def print_info(self, logging):
         logging.info('n_users:           %d' % self.n_users)
         logging.info('n_items:           %d' % self.n_items)
@@ -152,5 +153,3 @@ class DataLoaderKGAT(DataLoaderBase):
         logging.info('n_cf_test:         %d' % self.n_cf_test)
 
         logging.info('n_kg_train:        %d' % self.n_kg_train)
-
-
